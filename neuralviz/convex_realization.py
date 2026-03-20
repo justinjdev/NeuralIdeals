@@ -194,3 +194,160 @@ def _plot_convex_1d_plotly(code, intervals):
     fig.update_layout(title="Convex Realization (R¹)", showlegend=False,
                       xaxis_title="Stimulus space", yaxis=dict(showticklabels=False))
     return fig
+
+
+# --- R² experimental ---
+
+
+def _make_polygon(cx, cy, radius, rotation, n_sides=6):
+    """Create a regular polygon as list of (x, y) vertices."""
+    points = []
+    for i in range(n_sides):
+        angle = rotation + 2 * math.pi * i / n_sides
+        points.append((cx + radius * math.cos(angle), cy + radius * math.sin(angle)))
+    return points
+
+
+def _optimize_placement(code, n_neurons):
+    """Find polygon placements whose intersections match the code."""
+    from shapely.geometry import Polygon as ShapelyPolygon
+    from scipy.optimize import minimize
+
+    code_set = set(code)
+    code_set.add("0" * n_neurons)
+    n_sides = 6
+
+    def _params_to_polygons(params):
+        polys = []
+        for i in range(n_neurons):
+            cx = params[i * 4]
+            cy = params[i * 4 + 1]
+            r = abs(params[i * 4 + 2]) + 0.5
+            rot = params[i * 4 + 3]
+            pts = _make_polygon(cx, cy, r, rot, n_sides)
+            polys.append(ShapelyPolygon(pts))
+        return polys
+
+    def _loss(params):
+        polys = _params_to_polygons(params)
+        total_loss = 0.0
+
+        for pattern_int in range(2 ** n_neurons):
+            pattern = format(pattern_int, f"0{n_neurons}b")
+            expected = pattern in code_set
+
+            active = [i for i in range(n_neurons) if pattern[i] == "1"]
+            inactive = [i for i in range(n_neurons) if pattern[i] == "0"]
+
+            if not active:
+                continue
+
+            region = polys[active[0]]
+            for idx in active[1:]:
+                region = region.intersection(polys[idx])
+
+            for idx in inactive:
+                region = region.difference(polys[idx])
+
+            has_area = region.area > 1e-6
+
+            if expected and not has_area:
+                total_loss += 1.0
+            elif not expected and has_area:
+                total_loss += region.area
+
+        return total_loss
+
+    x0 = []
+    for i in range(n_neurons):
+        angle = 2 * math.pi * i / n_neurons
+        x0.extend([2 * math.cos(angle), 2 * math.sin(angle), 1.5, 0.0])
+
+    result = minimize(_loss, x0, method="Nelder-Mead",
+                      options={"maxiter": 5000, "xatol": 1e-4, "fatol": 1e-6})
+
+    if result.fun > 0.01:
+        warnings.warn(
+            f"R² convex realization did not fully converge (loss={result.fun:.4f}). "
+            "Showing best-effort result.",
+            stacklevel=3,
+        )
+
+    return _params_to_polygons(result.x)
+
+
+def plot_convex_2d(code, interactive=False, ax=None):
+    """Draw a convex realization of a neural code in R² (experimental).
+
+    Uses optimization to place convex polygons whose intersection pattern
+    matches the code. Requires shapely and scipy.
+    """
+    try:
+        from shapely.geometry import Polygon as ShapelyPolygon  # noqa: F401
+        from scipy.optimize import minimize  # noqa: F401
+    except ImportError:
+        raise ImportError(
+            "plot_convex_2d requires shapely and scipy: pip install shapely scipy"
+        )
+
+    code = normalize_input(code)
+    validate_code(code)
+    backend = get_backend(interactive)
+
+    n_neurons = len(code[0])
+    polygons = _optimize_placement(code, n_neurons)
+
+    if backend == "plotly":
+        return _plot_convex_2d_plotly(code, polygons, n_neurons)
+
+    fig, ax_out = prepare_axes(ax, interactive=interactive)
+    _plot_convex_2d_matplotlib(code, polygons, n_neurons, ax_out)
+    if ax is not None:
+        return ax_out
+    return fig
+
+
+def _plot_convex_2d_matplotlib(code, polygons, n_neurons, ax):
+    from matplotlib.patches import Polygon as MplPolygon
+
+    colors = neuron_colors(n_neurons)
+    for i, poly in enumerate(polygons):
+        if poly.is_empty:
+            continue
+        x, y = poly.exterior.xy
+        pts = list(zip(x, y))
+        patch = MplPolygon(pts, facecolor=colors[i], alpha=0.25,
+                           edgecolor=colors[i], linewidth=2)
+        ax.add_patch(patch)
+        cx, cy = poly.centroid.coords[0]
+        ax.text(cx, cy, f"U{i}", ha="center", va="center",
+                fontsize=10, fontweight="bold", color=colors[i])
+
+    ax.autoscale()
+    ax.set_aspect("equal")
+    ax.set_title("Convex Realization (R², experimental)", fontsize=12)
+    ax.axis("off")
+
+
+def _plot_convex_2d_plotly(code, polygons, n_neurons):
+    import plotly.graph_objects as go
+
+    colors = neuron_colors(n_neurons)
+    fig = go.Figure()
+
+    for i, poly in enumerate(polygons):
+        if poly.is_empty:
+            continue
+        x, y = poly.exterior.xy
+        fig.add_trace(go.Scatter(
+            x=list(x), y=list(y), fill="toself",
+            fillcolor=colors[i], opacity=0.25,
+            line=dict(color=colors[i], width=2), name=f"U{i}",
+        ))
+
+    fig.update_layout(
+        title="Convex Realization (R², experimental)", showlegend=True,
+        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False, scaleanchor="y"),
+        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+    )
+    return fig

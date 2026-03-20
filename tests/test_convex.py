@@ -77,3 +77,24 @@ class TestPlotConvex1d:
         fig = plot_convex_1d(["000", "100", "010", "110", "011", "111"])
         assert isinstance(fig, plt.Figure)
         plt.close(fig)
+
+
+class TestPlotConvex2d:
+    def test_returns_figure(self):
+        from neuralviz.convex_realization import plot_convex_2d
+        fig = plot_convex_2d(["00", "10", "01", "11"])
+        assert isinstance(fig, plt.Figure)
+        plt.close(fig)
+
+    def test_with_ax(self):
+        from neuralviz.convex_realization import plot_convex_2d
+        fig, ax = plt.subplots()
+        result = plot_convex_2d(["10", "01"], ax=ax)
+        assert result is ax
+        plt.close(fig)
+
+    def test_smoke_three_neurons(self):
+        from neuralviz.convex_realization import plot_convex_2d
+        fig = plot_convex_2d(["000", "100", "010", "001"])
+        assert isinstance(fig, plt.Figure)
+        plt.close(fig)
