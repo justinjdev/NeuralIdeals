@@ -32,6 +32,18 @@ plot_convex_1d(code)
 
 All functions return matplotlib figures by default. Pass `interactive=True` for plotly.
 
+### Examples
+
+Visualizations for the code `['001', '010', '110']` (3 neurons, 3 codewords):
+
+| Receptive Fields | Simplicial Complex | Hasse Diagram |
+|:---:|:---:|:---:|
+| ![RF](examples/rf.png) | ![Simplicial](examples/simplicial.png) | ![Hasse](examples/hasse.png) |
+
+| Convex R¹ | Arc Display | Line Display |
+|:---:|:---:|:---:|
+| ![Convex](examples/convex1d.png) | ![Arcs](examples/arcs.png) | ![Lines](examples/lines.png) |
+
 **Optional dependencies:**
 
 ```bash
