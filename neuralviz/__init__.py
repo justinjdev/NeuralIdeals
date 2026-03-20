@@ -1,5 +1,7 @@
 """neuralviz — Pure Python visualization package for neural codes."""
 
+__version__ = "0.1.0"
+
 from neuralviz.hasse import plot_hasse
 from neuralviz.simplicial_complex import plot_simplicial_complex
 from neuralviz.convex_realization import plot_convex_1d, plot_convex_2d
