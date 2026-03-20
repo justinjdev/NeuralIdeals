@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=64.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neuralviz"
+version = "0.1.0"
+description = "Pure Python visualization package for neural codes and neural ideals"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.8"
+authors = [
+    { name = "Justin Jones" },
+    { name = "Alexander Farrack" },
+    { name = "Ethan Petersen" },
+    { name = "Nora Youngs" },
+    { name = "Rebecca Garcia" },
+    { name = "Luis David Garcia Puente" },
+]
+keywords = ["neural-codes", "neural-ideals", "visualization", "algebraic-topology", "neuroscience"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+dependencies = [
+    "matplotlib>=3.5",
+    "networkx>=2.6",
+    "numpy>=1.21",
+]
+
+[project.optional-dependencies]
+interactive = ["plotly>=5.0"]
+convex2d = ["shapely>=2.0", "scipy>=1.10"]
+all = ["plotly>=5.0", "shapely>=2.0", "scipy>=1.10"]
+dev = ["pytest>=7.0", "plotly>=5.0", "shapely>=2.0", "scipy>=1.10"]
+
+[project.urls]
+Homepage = "https://github.com/justinjdev/NeuralIdeals"
+Paper = "https://arxiv.org/abs/1609.09602"
+
+[tool.setuptools.packages.find]
+include = ["neuralviz*"]
